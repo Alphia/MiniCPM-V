@@ -32,3 +32,4 @@ socksio==1.0.0
 gradio
 gradio_client
 Flask==3.0.3
+bitsandbytes  # int4 need it; otherwise loading error

@@ -5,11 +5,11 @@ import requests
 from PIL import Image
 from flask import Flask, request, jsonify
 
-from MiniCPMV25 import MiniCPMV25
-from config import model_path
+from MiniCPMV25 import MiniCPMV25,MiniCPMV25INT4
+from config import model_path, model_int4_path, model_size
 
 app = Flask(__name__)
-model = MiniCPMV25(model_path)
+model = MiniCPMV25(model_path) if model_size == 'L' else MiniCPMV25INT4(model_int4_path)
 
 
 def load_image(image_file):

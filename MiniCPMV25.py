@@ -21,3 +21,19 @@ class MiniCPMV25:
             sampling=True,
             temperature=0.7
         )
+
+
+class MiniCPMV25INT4:
+    def __init__(self, model_path) -> None:
+        self.model = AutoModel.from_pretrained(model_path, trust_remote_code=True)
+        self.tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
+        self.model.eval()
+
+    def chat(self, rgb_img, prompt):
+        return self.model.chat(
+            image=rgb_img,
+            msgs=json.loads(prompt),
+            tokenizer=self.tokenizer,
+            sampling=True,
+            temperature=0.7
+        )
