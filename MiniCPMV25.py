@@ -13,13 +13,13 @@ class MiniCPMV25:
         self.tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
         self.model.eval().cuda()
 
-    def chat(self, rgb_img, prompt):
+    def chat(self, rgb_img, prompt, sampling=False, temperature=0.7):
         return self.model.chat(
             image=rgb_img,
             msgs=json.loads(prompt),
             tokenizer=self.tokenizer,
-            sampling=True,
-            temperature=0.7
+            sampling=sampling,
+            temperature=temperature
         )
 
 

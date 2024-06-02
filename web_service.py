@@ -25,9 +25,11 @@ def load_image(image_file):
 def captioning():
     data = request.get_json()
     image_url = data['image_url']
+    temperature = data['temperature']
+    sampling = data['sampling']
     prompt = [{"role": "user", "content": data['prompt']}]
     rgb_img = load_image(image_url)
-    caption = model.chat(rgb_img, json.dumps(prompt, ensure_ascii=True))
+    caption = model.chat(rgb_img, json.dumps(prompt, ensure_ascii=True), sampling=sampling, temperature=temperature)
     return jsonify({'caption': caption})
 
 
