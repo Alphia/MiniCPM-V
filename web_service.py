@@ -28,7 +28,8 @@ def captioning_open_ai_compatible():
     temperature = data['temperature'] if 'temperature' in data else 0.1
     messages = data['messages'] if 'messages' in data else []
     first_img_url, new_messages = extract_url_and_messages(messages)
-    caption = model.chat(first_img_url, json.dumps(new_messages, ensure_ascii=True), sampling=sampling,
+    rgb_img = load_image(first_img_url)
+    caption = model.chat(rgb_img, json.dumps(new_messages, ensure_ascii=True), sampling=sampling,
                          temperature=temperature)
     return jsonify({'caption': caption})
 
