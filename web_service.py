@@ -21,7 +21,7 @@ def load_image(image_file):
     return image
 
 
-@app.route('v1/chat/completions', methods=['POST'])
+@app.route('/v1/chat/completions', methods=['POST'])
 def captioning_open_ai_compatible():
     data = request.get_json()
     sampling = data['sampling'] > 0 if 'sampling' in data else True
@@ -61,4 +61,4 @@ def captioning():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8082)
+    app.run(host='0.0.0.0', port=18080)
