@@ -38,7 +38,7 @@ def extract_url_and_messages(messages):
     image_urls = []
     for message in messages:
         if isinstance(message['content'], list) and message['role'] == 'user':
-            for item in message:
+            for item in message['content']:
                 if item['type'] == 'text':
                     new_messages.append({"role": message['role'], "content": item['text']})
                 if item['type'] == 'image_url':
