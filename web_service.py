@@ -9,6 +9,7 @@ from MiniCPMV25 import MiniCPMV25,MiniCPMV25INT4
 from config import model_path, model_int4_path, model_size
 
 app = Flask(__name__)
+app.url_map.strict_slashes = False
 model = MiniCPMV25(model_path) if model_size == 'L' else MiniCPMV25INT4(model_int4_path)
 
 
@@ -21,7 +22,7 @@ def load_image(image_file):
     return image
 
 
-@app.route('/v1/chat/completions/', methods=['POST'])
+@app.route('/v1/chat/completions', methods=['POST'])
 def captioning_open_ai_compatible():
     data = request.get_json()
     sampling = data['sampling'] > 0 if 'sampling' in data else True
