@@ -13,6 +13,7 @@ from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import Dataset
 from transformers import AutoProcessor, AutoTokenizer
 
+llama3_chat_template = "{% set loop_messages = messages %}{% for message in loop_messages %}{% set content = '<|start_header_id|>' + message['role'] + '<|end_header_id|>\n\n'+ message['content'] | trim + '<|eot_id|>' %}{% if loop.index0 == 0 %}{% set content = bos_token + content %}{% endif %}{{ content }}{% endfor %}"
 
 class SupervisedDataset(Dataset):
     """Dataset for supervised fine-tuning."""
@@ -56,6 +57,7 @@ class SupervisedDataset(Dataset):
         )
         ret = dict(
             input_ids=ret["input_ids"],
+            position_ids=ret["position_ids"],
             labels=ret["target"],
             attention_mask=torch.ones_like(ret["input_ids"], dtype=torch.bool),
             pixel_values=ret["pixel_values"],
@@ -65,19 +67,26 @@ class SupervisedDataset(Dataset):
 
         return ret
 
+def data_collator(examples, padding_value=0, max_length=2048):
+    def trim_and_pad(seq, batch_first, padding_value):
+        return pad_sequence([s[:max_length] for s in seq], batch_first=True, padding_value=padding_value)
 
-def data_collator(examples, padding_value=0):
-    input_ids = pad_sequence(
+    input_ids = trim_and_pad(
         [example["input_ids"] for example in examples],
         batch_first=True,
         padding_value=padding_value,
     )
-    targets = pad_sequence(
-        [example["labels"] for example in examples],
+    position_ids = trim_and_pad(
+        [example["position_ids"] for example in examples],
         batch_first=True,
         padding_value=padding_value,
     )
-    attention_mask = pad_sequence(
+    targets = trim_and_pad(
+        [example["labels"] for example in examples],
+        batch_first=True,
+        padding_value=-100,
+    )
+    attention_mask = trim_and_pad(
         [example["attention_mask"] for example in examples],
         batch_first=True,
         padding_value=padding_value,
@@ -87,6 +96,7 @@ def data_collator(examples, padding_value=0):
     tgt_sizes = [example["tgt_sizes"] for example in examples]
     return {
         "input_ids": input_ids,
+        "position_ids": position_ids,
         "labels": targets,
         "attention_mask": attention_mask,
         "image_bound": image_bound,
@@ -130,6 +140,7 @@ def conversation_to_ids(conversation, tokenizer, llm_type=None):
     image_end_tokens = torch.where(ids == tokenizer.im_end_id)[0]
     if len(image_start_tokens) != len(image_end_tokens):
         print("image start token != image end tokens")
+        
     if len(image_start_tokens) > 0:
         image_bound = torch.hstack(
             [image_start_tokens.unsqueeze(-1), image_end_tokens.unsqueeze(-1)]
@@ -137,11 +148,13 @@ def conversation_to_ids(conversation, tokenizer, llm_type=None):
     else:
         image_bound = []
 
+    position_ids = torch.arange(ids.size(0)).long()
     return {
         "input_ids": ids,
         "target": target,
         "image_bound": image_bound,
         "raw_msg": raw_msg,
+        "position_ids": position_ids
     }
 
 
@@ -182,10 +195,10 @@ def conversation_to_ids_llama3(conversation, tokenizer):
     input_ids = []
     context = []
     raw_msg = tokenizer.apply_chat_template(
-        conversation, tokenize=False, add_generation_prompt=False
+        conversation, tokenize=False, add_generation_prompt=False, chat_template=llama3_chat_template,
     )
     input_ids = tokenizer.apply_chat_template(
-        conversation, tokenize=True, add_generation_prompt=False
+        conversation, tokenize=True, add_generation_prompt=False, chat_template=llama3_chat_template,
     )
     input_ids = np.array(input_ids)
 
