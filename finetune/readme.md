@@ -1,17 +1,19 @@
 # MiniCPM-V Finetuning
 
 
-We offer the official scripts for easy finetuning of the pretrained **MiniCPM-Llama3-V 2.5** and **MiniCPM-V 2.0** on downstream tasks. Our finetune scripts use transformers Trainer and DeepSpeed by default.
+We offer the official scripts for easy finetuning of the pretrained **MiniCPM-V-2_6**, **MiniCPM-Llama3-V 2.5** and **MiniCPM-V 2.0** on downstream tasks. Our finetune scripts use transformers Trainer and DeepSpeed by default.
 
 ### Data preparation
 
-To prepare your finetuning data, you should formulate each sample as a dictionary consisting of an id, an image path list with an image, and a list of conversations. Then save data samples in JSON files.
+To prepare your fine-tuning data, you should formulate each sample as a dictionary consisting of an id, an image path (or list of images), and a list of conversations. Then, save the data samples in JSON files.
 
-For the vision-language example with image, you are required to provide **\<image\>** to define the position to insert the image embeddings. If you don't provide \<image\>, the image will be placed at the front of the conversation.
+For vision-language tasks, you must provide placeholders like **\<image\>** or **\<image_XX\>** to define where to insert the image embeddings within the conversation. If no placeholder is provided, the image will be placed at the front of the conversation by default.
 
+#### Single Image Example
+If your input consists of a single image, you can use a single placeholder **\<image\>** to indicate where the image should be inserted in the conversation.
 <details>
   <summary>
-    <b>vision-language example (vl_finetune_data.json) with 1 samples.</b>
+    <b>Single image example (vl_finetune_data.json) with 1 samples.</b>
   </summary>
 
 ```
@@ -50,15 +52,54 @@ For the vision-language example with image, you are required to provide **\<imag
 
 </details>
 
+#### Multiple Images Example
+For inputs containing multiple images, utilize a dictionary where each key represents a unique placeholder (e.g., **\<image_00\>**, **\<image_01\**) with the corresponding image path as its value. These placeholders can then be used within the conversation to seamlessly insert images at specific positions.
+
+Additionally, to optimize resource management, especially when dealing with large batches of images during training or inference, consider reducing `max_slice_nums`. For example, in version 2.6, a single image is represented by 64 tokens. When `slice=9`, an image with a maximum resolution of 1344x1344 will consume nearly 64*(9+1) tokens. To minimize the number of tokens used per image, you can set `slice=1`, resulting in a single image being represented by 64 tokens.
+
+If the total token count exceeds `max_length`, truncation will be applied. For multi-image supervised fine-tuning (SFT), it's recommended to set `MODEL_MAX_LENGTH=4096` in your script for better performance.
+
+
+
+<details>
+  <summary>
+    <b>Multiple images example (vl_finetune_data.json) with 1 samples.</b>
+  </summary>
+
+```
+  [
+    {
+      "id": "0",
+      "image": {
+        "<image_00>": "path/to/image_0.jpg",
+        "<image_01>": "path/to/image_1.jpg",
+        "<image_02>": "path/to/image_2.jpg",
+        "<image_03>": "path/to/image_3.jpg"
+      },
+      "conversations": [
+        {
+          "role": "user", 
+          "content": "How to create such text-only videos using CapCut?\n<image_00>\n<image_01>\n<image_02>\n<image_03>\n"
+        }, 
+        {
+          "role": "assistant", 
+          "content": "To create a text-only video as shown in the images, follow these steps in CapCut..."
+        }
+      ]
+    }
+  ]
+```
+</details>
+
 ### Full-parameter finetuning
 
 Full-parameter parameter finetuning requires updating all parameters of LLM in the whole training process. Please specify the correct MODEL path, DATA path and LLM_TYPE in the shell scripts.
 
 ```shell
-MODEL="openbmb/MiniCPM-Llama3-V-2_5" # or openbmb/MiniCPM-V-2
+MODEL="openbmb/MiniCPM-V-2_6" # or openbmb/MiniCPM-Llama3-V-2_5, openbmb/MiniCPM-V-2
 DATA="path/to/trainging_data" # json file
 EVAL_DATA="path/to/test_data" # json file
-LLM_TYPE="llama3" # if use openbmb/MiniCPM-V-2, please set LLM_TYPE=minicpm
+LLM_TYPE="qwen2" # if use openbmb/MiniCPM-V-2, please set LLM_TYPE=minicpm, if use openbmb/MiniCPM-Llama3-V-2_5, please set LLM_TYPE="llama3"
 ```
 
 To launch your training, run the following script:
@@ -67,7 +108,6 @@ To launch your training, run the following script:
 sh finetune_ds.sh
 ```
 
-Specially, Llama3 has a different chat_template for training and inference, we modified the chat_template for training, so please take care to restore the chat_template when inference on the training ckpt.
 
 ### LoRA finetuning
 
@@ -80,20 +120,22 @@ sh finetune_lora.sh
 After training, you could load the model with the path to the adapter. We advise you to use absolute path for your pretrained model. This is because LoRA only saves the adapter and the absolute path in the adapter configuration json file is used for finding out the pretrained model to load.
 
 ```
-from peft import AutoPeftModelForCausalLM
+from peft import PeftModel
+from transformers import AutoModel
+model_type=  "openbmb/MiniCPM-V-2_6"   # or openbmb/MiniCPM-Llama3-V-2_5 , openbmb/MiniCPM-V-2
+path_to_adapter="path_to_your_fine_tuned_checkpoint"
 
-path_to_adapter="path_to_adapter"
+model =  AutoModel.from_pretrained(
+        model_type,
+        trust_remote_code=True
+        )
 
-model = AutoPeftModelForCausalLM.from_pretrained(
-    # path to the output directory
+lora_model = PeftModel.from_pretrained(
+    model,
     path_to_adapter,
     device_map="auto",
     trust_remote_code=True
-).eval()
-
-vpm_resampler_embedtokens_weight = torch.load(f"{path_to_adapter}/vpm_resampler_embedtokens.pt")
-
-msg = model.load_state_dict(vpm_resampler_embedtokens_weight, strict=False)
+).eval().cuda()
 ```
 
 
@@ -173,14 +215,16 @@ A: The error as described in [issues 168](https://github.com/OpenBMB/MiniCPM-V/i
 
 1.**Reload the Fine-Tuned Model:** Make sure you correctly load the checkpoint that has been fine-tuned using lora techniques. Use the following code example to guide you:
    ```python
-   from peft import AutoPeftModelForCausalLM
+ from peft import AutoPeftModel
 
-   model = AutoPeftModelForCausalLM.from_pretrained(
-       'path_to_your_fine_tuned_checkpoint',  # Path to your fine-tuned checkpoint directory
-       output='output/minicpmv2_lora',
-       device_map='auto',
-       trust_remote_code=True
-   ).eval()
+path_to_adapter="path_to_your_fine_tuned_checkpoint"
+
+model = AutoPeftModel.from_pretrained(
+    # path to the output directory
+    path_to_adapter,
+    device_map="auto",
+    trust_remote_code=True
+).eval().cuda()
    ```
   2.**Update the `model_minicpmv.py` File:**
    - **Verification:** Make sure you verify and update your `model_minicpmv.py` file to ensure it is the latest version.

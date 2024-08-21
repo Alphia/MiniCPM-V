@@ -6,12 +6,16 @@ NODE_RANK=0
 MASTER_ADDR=localhost
 MASTER_PORT=6001
 
-MODEL="openbmb/MiniCPM-Llama3-V-2_5" # or openbmb/MiniCPM-V-2
+MODEL="openbmb/MiniCPM-V-2_6" # or openbmb/MiniCPM-V-2, openbmb/MiniCPM-Llama3-V-2_5
 # ATTENTION: specify the path to your training data, which should be a json file consisting of a list of conversations.
 # See the section for finetuning in README for more information.
 DATA="path/to/trainging_data"
 EVAL_DATA="path/to/test_data"
-LLM_TYPE="llama3" # if use openbmb/MiniCPM-V-2, please set LLM_TYPE=minicpm
+LLM_TYPE="qwen2" 
+# if use openbmb/MiniCPM-V-2, please set LLM_TYPE=minicpm
+#if use openbmb/MiniCPM-Llama3-V-2_5, please set LLM_TYPE=llama3
+
+MODEL_MAX_Length=2048 # if conduct multi-images sft, please set MODEL_MAX_Length=4096
 
 DISTRIBUTED_ARGS="
     --nproc_per_node $GPUS_PER_NODE \
@@ -37,15 +41,15 @@ torchrun $DISTRIBUTED_ARGS finetune.py  \
     --tune_vision true \
     --tune_llm false \
     --use_lora true \
-    --lora_target_modules "llm\..*layers\.\d+\.self_attn\.(q_proj|k_proj)" \
-    --model_max_length 2048 \
+    --lora_target_modules "llm\..*layers\.\d+\.self_attn\.(q_proj|k_proj|v_proj|o_proj)" \
+    --model_max_length $MODEL_MAX_Length \
     --max_slice_nums 9 \
     --max_steps 10000 \
     --eval_steps 1000 \
-    --output_dir output/output_minicpmv2_lora \
-    --logging_dir output/output_minicpmv2_lora \
+    --output_dir output/output__lora \
+    --logging_dir output/output_lora \
     --logging_strategy "steps" \
-    --per_device_train_batch_size 2 \
+    --per_device_train_batch_size 1 \
     --per_device_eval_batch_size 1 \
     --gradient_accumulation_steps 1 \
     --evaluation_strategy "steps" \
