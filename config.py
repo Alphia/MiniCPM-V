@@ -1,3 +1,2 @@
-model_size = 'L'
-model_path = '../openbmb/MiniCPM-Llama3-V-2_5'
-model_int4_path = '../openbmb/MiniCPM-Llama3-V-2_5-int4'
+model_name = 'MiniCPM-V-2_6'
+model_path = f'../openbmb/${model_name}'

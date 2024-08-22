@@ -1,10 +1,22 @@
-import base64
-import io
 import json
 
 import torch
-from PIL import Image
 from transformers import AutoModel, AutoTokenizer
+
+
+class MiniCPMV26:
+    def __init__(self, model_path, multi_gpus=False) -> None:
+        print('torch_version:', torch.__version__)
+        self.model = AutoModel.from_pretrained(model_path, trust_remote_code=True, attn_implementation='sdpa',
+                                               torch_dtype=torch.bfloat16)
+        self.model.eval().cuda()
+        self.tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
+
+    def chat(self, msgs):
+        return self.model.chat(
+            msgs=msgs,
+            tokenizer=self.tokenizer,
+        )
 
 
 class MiniCPMV25:
