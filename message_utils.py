@@ -6,17 +6,23 @@ from PIL import Image
 
 def convert_to_cpm_v_26(open_ai_messages):
     v26_msgs = []
-    for message in open_ai_messages:
-        v26_msg = {"role": message['role'], "content": []}
-        if isinstance(message['content'], list) and message['role'] == 'user':
-            for item in message['content']:
-                if item['type'] == 'text':
-                    v26_msg['content'].append(item['text'])
-                if item['type'] == 'image_url':
-                    v26_msg['content'].append(load_image(item['image_url']['url']))
-        if isinstance(message['content'], str):
-            v26_msg['content'].append(message['content'])
-        v26_msgs.append(v26_msg)
+    for oa_message in open_ai_messages:
+        v26_message = {"role": oa_message['role'], "content": []}
+        if oa_message['role'] == 'user':
+            if isinstance(oa_message['content'], list):
+                for item in oa_message['content']:
+                    if item['type'] == 'text':
+                        v26_message['content'].append(item['text'])
+                    if item['type'] == 'image_url':
+                        v26_message['content'].append(load_image(item['image_url']['url']))
+            if isinstance(oa_message['content'], str):
+                v26_message['content'].append(oa_message['content'])
+        else:
+            if isinstance(oa_message['content'], list):
+                v26_message['content'].append(oa_message['content'][0])
+            if isinstance(oa_message['content'], str):
+                v26_message['content'].append(oa_message['content'])
+        v26_msgs.append(v26_message)
     return v26_msgs
 
 

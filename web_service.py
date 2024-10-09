@@ -20,11 +20,9 @@ if model_name == 'MiniCPM-Llama3-V-2_5-int4':
 @app.route('/v2.6/chat/completions', methods=['POST'])
 def caption_v26():
     data = request.get_json()
-    sampling = data['sampling'] > 0 if 'sampling' in data else True
-    temperature = data['temperature'] if 'temperature' in data else 0.1
-    open_ai_messages = data['messages'] if 'messages' in data else []
+    open_ai_messages = data.pop('messages')
     cpm_v26_messages = convert_to_cpm_v_26(open_ai_messages)
-    caption = model.chat(msgs=cpm_v26_messages)
+    caption = model.chat(msgs=cpm_v26_messages, **data)
     return jsonify({'caption': caption})
 
 

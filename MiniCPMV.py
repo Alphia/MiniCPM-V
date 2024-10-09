@@ -12,10 +12,11 @@ class MiniCPMV26:
         self.model.eval().cuda()
         self.tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
 
-    def chat(self, msgs):
+    def chat(self, msgs, **kwargs):
         return self.model.chat(
             msgs=msgs,
             tokenizer=self.tokenizer,
+            **kwargs
         )
 
 

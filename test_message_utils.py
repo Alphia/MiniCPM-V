@@ -7,6 +7,14 @@ class Test(TestCase):
     def test_convert_to_cpm_v_26(self):
         open_ai_messages = [
             {
+                "role": "system",
+                "content": "explain image"
+            },
+            {
+                "role": "system",
+                "content": ["explain image again", "explain image again 3"]
+            },
+            {
                 "role": "user",
                 "content": [
                     {
@@ -27,4 +35,5 @@ class Test(TestCase):
             }
         ]
         v26_messages = convert_to_cpm_v_26(open_ai_messages)
-        self.assertEqual(len(v26_messages[0]['content']), 2)
+        self.assertEqual(len(v26_messages[2]['content']), 2)
+        print(v26_messages)
