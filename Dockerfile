@@ -20,7 +20,7 @@ RUN pip install -r requirements.txt
 EXPOSE 18080
 
 # 设置环境变量
-ENV FLASK_APP=web_service.py
+ENV FLASK_APP=MiniCPM-V/web_service.py
 
 # 运行flask web服务
 CMD ["flask", "run", "--host=0.0.0.0", "--port=18080"]
