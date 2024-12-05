@@ -8,7 +8,7 @@ WORKDIR /workspace
 # 以后只有修改端口与requirements内容时才需要重新构建镜像
 # 本镜像将相对稳定的作为模型运行环境。
 # 把当前目录所有文件copy到/workspace下
-#COPY . .
+COPY requirements.txt .
 
 # 删除config.py文件
 #RUN rm config.py
