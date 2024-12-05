@@ -26,7 +26,7 @@ def caption_v26():
     return jsonify({'caption': caption})
 
 
-@app.route('/v1/chat/completions', methods=['POST'])
+@app.route('/v2.5/chat/completions', methods=['POST'])
 def caption_v25():
     data = request.get_json()
     sampling = data['sampling'] > 0 if 'sampling' in data else True
@@ -42,12 +42,9 @@ def caption_v25():
 @app.route('/', methods=['POST'])
 def captioning():
     data = request.get_json()
-    image_url = data['image_url']
-    temperature = data['temperature']
-    sampling = data['sampling']
-    prompt = [{"role": "user", "content": data['prompt']}]
-    rgb_img = load_image(image_url)
-    caption = model.chat(rgb_img, json.dumps(prompt, ensure_ascii=True), sampling=sampling, temperature=temperature)
+    open_ai_messages = data.pop('messages')
+    cpm_v26_messages = convert_to_cpm_v_26(open_ai_messages)
+    caption = model.chat(msgs=cpm_v26_messages, **data)
     return jsonify({'caption': caption})
 
 
