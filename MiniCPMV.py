@@ -14,6 +14,7 @@ class MiniCPMV26:
 
     def chat(self, msgs, **kwargs):
         return self.model.chat(
+            image=None,
             msgs=msgs,
             tokenizer=self.tokenizer,
             **kwargs
