@@ -2,6 +2,7 @@ from io import BytesIO
 
 import requests
 from PIL import Image
+from log_handler import logger
 
 
 def convert_to_cpm_v_26(open_ai_messages):
@@ -42,6 +43,7 @@ def extract_url_and_messages(messages):
 
 
 def load_image(image_file):
+    logger.info(f"image_file: {image_file}")
     if image_file.startswith('http') or image_file.startswith('https'):
         response = requests.get(image_file)
         image = Image.open(BytesIO(response.content)).convert('RGB')

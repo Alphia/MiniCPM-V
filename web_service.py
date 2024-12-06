@@ -5,11 +5,12 @@ from flask import Flask, request, jsonify
 from MiniCPMV import MiniCPMV25INT4, MiniCPMV26, MiniCPMV25
 from config import model_path, model_name
 from message_utils import convert_to_cpm_v_26, extract_url_and_messages, load_image
+from log_handler import logger
 
 app = Flask(__name__)
 app.url_map.strict_slashes = False
 
-if model_name == 'MiniCPMV26':
+if model_name == 'MiniCPM-V-2_6':
     model = MiniCPMV26(model_path)
 if model_name == 'MiniCPM-Llama3-V-2_5':
     model = MiniCPMV25(model_path)
@@ -42,6 +43,7 @@ def caption_v25():
 @app.route('/', methods=['POST'])
 def captioning():
     data = request.get_json()
+    logger.info(f"request: {data}")
     open_ai_messages = data.pop('messages')
     cpm_v26_messages = convert_to_cpm_v_26(open_ai_messages)
     caption = model.chat(msgs=cpm_v26_messages, **data)
