@@ -2,6 +2,8 @@ from io import BytesIO
 
 import requests
 from PIL import Image
+from requests import RequestException
+
 from log_handler import logger
 
 
@@ -42,11 +44,14 @@ def extract_url_and_messages(messages):
     return (image_urls[0]), new_messages
 
 
-def load_image(image_file):
-    logger.info(f"image_file: {image_file}")
-    if image_file.startswith('http') or image_file.startswith('https'):
-        response = requests.get(image_file)
-        image = Image.open(BytesIO(response.content)).convert('RGB')
+def load_image(image_uri):
+    if image_uri.startswith('http') or image_uri.startswith('https'):
+        try:
+            response = requests.get(image_uri)
+            response.raise_for_status()
+            image = Image.open(BytesIO(response.content)).convert('RGB')
+        except RequestException as e:
+            logger.error(f"Error downloading image from {image_uri}: {e}")
     else:
-        image = Image.open(image_file).convert('RGB')
+        image = Image.open(image_uri).convert('RGB')
     return image
